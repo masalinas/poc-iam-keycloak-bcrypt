@@ -1,0 +1,42 @@
+version: '3'
+
+volumes:
+  postgres_data:
+    driver: local
+
+services:
+  keycloakdb:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    networks:
+      - olive
+  keycloak:
+    build: .
+    volumes:
+      - ./realms/export:/tmp/realms/export
+      - ./realms/import:/opt/jboss/keycloak/imports    
+    environment:
+      KEYCLOAK_IMPORT: /opt/jboss/keycloak/imports/olive_realm.json -Dkeycloak.profile.feature.upload_scripts=enabled
+      DB_VENDOR: POSTGRES
+      DB_ADDR: keycloakdb
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_SCHEMA: public
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+    ports:
+      - 8080:8080
+    depends_on:
+      - keycloakdb
+    networks:
+      - olive
+
+networks:
+  olive:
+    external: true
